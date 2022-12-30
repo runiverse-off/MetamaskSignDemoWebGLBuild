@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity WebGL Player | Runiverse</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+</head>
+
+<body style="background-color:black;">
+    <div id="unity-container" class="unity-desktop">
+        <canvas id="unity-canvas" width=1280 height=720></canvas>
+        <div id="unity-loading-bar">
+            <div id="unity-logo"></div>
+            <div id="unity-progress-bar-empty">
+                <div id="unity-progress-bar-full"></div>
+            </div>
+        </div>
+        <div id="unity-warning"> </div>
+        <div id="unity-footer">
+            <div id="unity-webgl-logo"></div>
+            <div id="unity-fullscreen-button"></div>
+            <div id="unity-build-title">
+                <h style="color:white">Runiverse</h>
+                <!--Runiverse-->
+            </div>
+        </div>
+    </div>
+    <script src="web3/index.js"></script>
+
+    <script>function CopyButton(mytext) {
+            navigator.clipboard.writeText(mytext);
+        }</script>
+
+    <script>function IsMetamaskInstalled() {
+            if (typeof window.ethereum !== 'undefined') {
+                console.log('you already have a web3 provider');
+                return true;
+            } else {
+                console.log('please install Metamask');
+                // var interval = setInterval(checkProvider, 1000);
+                return false;
+            }
+        }</script>
+
+    <script>var myGameInstance = null; </script>
+    <script>
+        async function FnSign(wallet, token, amount, id, contract) {
+            console.log('signnn wallet in index = ' + wallet);
+            console.log('signnn token in index = ' + token);
+            console.log('signnn amount in index = ' + amount);
+            console.log('signnn id in index = ' + id);
+            var msgParams = {
+                domain: {
+                    chainId: "137",
+                    name: 'Runiverse',
+                    verifyingContract: contract,
+                    version: '1',
+                },
+                message: {
+                    sender: wallet,
+                    tokenChosen: token,
+                    amountBetted: amount,
+                    gameId: id,
+                    deadline: "300000000000000000000000",
+                },
+                primaryType: 'StartRun',
+                types: {
+                    EIP712Domain: [
+                        { name: 'name', type: 'string' },
+                        { name: 'version', type: 'string' },
+                        { name: 'chainId', type: 'uint256' },
+                        { name: 'verifyingContract', type: 'address' },
+                    ],
+                    StartRun: [
+                        { name: 'sender', type: 'address' },
+                        { name: 'tokenChosen', type: 'address' },
+                        { name: 'amountBetted', type: 'uint256' },
+                        { name: 'gameId', type: 'uint256' },
+                        { name: 'deadline', type: 'uint256' },
+                    ],
+                },
+            };
+            msgParams.message.sender = wallet;
+            msgParams.message.tokenChosen = token;
+            msgParams.message.amountBetted = amount;
+            msgParams.message.gameId = id;
+            msgParams.domain.verifyingContract = contract;
+            console.log('sign message in index = ' + JSON.stringify(msgParams));
+            var sign1 = "";
+            try {
+                sign1 = await window.ethereum.request({
+                    method: 'eth_signTypedData_v4',
+                    params: [wallet, JSON.stringify(msgParams)],
+                });
+            }
+            catch (error) {
+                sign1 = "";
+            }
+            console.log('signnn in index = ' + sign1);
+            myGameInstance.SendMessage('UIManager', 'GetSignMessageFromJava', sign1.toString());
+            // return sign1;
+        }
+    </script>
+
+    <script>function fnBrowserDetect() {
+
+            let userAgentString =
+                navigator.userAgent;
+
+            // Detect Chrome
+            let chromeAgent =
+                userAgentString.indexOf("Chrome") > -1;
+
+            // Detect Internet Explorer
+            let IExplorerAgent =
+                userAgentString.indexOf("MSIE") > -1 ||
+                userAgentString.indexOf("rv:") > -1;
+
+            // Detect Firefox
+            let firefoxAgent =
+                userAgentString.indexOf("Firefox") > -1;
+
+            // Detect Safari
+            let safariAgent =
+                userAgentString.indexOf("Safari") > -1;
+
+            // Discard Safari since it also matches Chrome
+            if ((chromeAgent) && (safariAgent))
+                safariAgent = false;
+
+            // Detect Opera
+            let operaAgent =
+                userAgentString.indexOf("OP") > -1;
+
+            // Discard Chrome since it also matches Opera
+            if ((chromeAgent) && (operaAgent))
+                chromeAgent = false;
+
+            // Detect Opera
+            let edgeAgent =
+                userAgentString.indexOf("Edg") > -1;
+
+            // Discard Chrome since it also matches Opera
+            if ((chromeAgent) && (edgeAgent))
+                chromeAgent = false;
+
+            console.log('safariAgent = ' + safariAgent);
+            console.log('chromeAgent = ' + chromeAgent);
+            console.log('IExplorerAgent = ' + IExplorerAgent);
+            console.log('operaAgent = ' + operaAgent);
+            console.log('firefoxAgent = ' + firefoxAgent);
+            console.log('edgeAgent = ' + edgeAgent);
+
+            if (chromeAgent || firefoxAgent) {
+                return true;
+            }
+            else {
+                return false;
+            }
+
+            /*var userAgent = navigator.userAgent;
+            if (userAgent.match(/chrome|chromium|crios/i)) {
+              return true;
+            } else if (userAgent.match(/firefox|fxios/i)) {
+              return true;
+              // } else if (userAgent.match(/safari/i)) {
+              //   // browserName = "safari";
+              //   return "safari";
+              //   } else if (userAgent.match(/opr\//i)) {
+              //     browserName = "opera";
+              //   } else if (userAgent.match(/edg/i)) {
+              //     browserName = "edge";
+            } else {
+              // browserName = "No browser detection";
+              return false;
+            }*/
+
+        }</script>
+
+    <script>
+        var container = document.querySelector("#unity-container");
+        var canvas = document.querySelector("#unity-canvas");
+        var loadingBar = document.querySelector("#unity-loading-bar");
+        var progressBarFull = document.querySelector("#unity-progress-bar-full");
+        var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+        var warningBanner = document.querySelector("#unity-warning");
+
+        // Shows a temporary message banner/ribbon for a few seconds, or
+        // a permanent error message on top of the canvas if type=='error'.
+        // If type=='warning', a yellow highlight color is used.
+        // Modify or remove this function to customize the visually presented
+        // way that non-critical warnings and error messages are presented to the
+        // user.
+        function unityShowBanner(msg, type) {
+            function updateBannerVisibility() {
+                warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+            }
+            var div = document.createElement('div');
+            div.innerHTML = msg;
+            warningBanner.appendChild(div);
+            if (type == 'error') div.style = 'background: red; padding: 10px;';
+            else {
+                if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+                setTimeout(function () {
+                    warningBanner.removeChild(div);
+                    updateBannerVisibility();
+                }, 5000);
+            }
+            updateBannerVisibility();
+        }
+
+        function unityShowBannerPermenent(msg, type) {
+            function updateBannerVisibility() {
+                warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+            }
+            var div = document.createElement('div');
+            div.innerHTML = msg;
+            warningBanner.appendChild(div);
+            div.style = 'background: white; padding: 100px;';
+            div.style.fontSize = 'xx-large';
+            updateBannerVisibility();
+        }
+
+        var buildUrl = "Build";
+        var loaderUrl = buildUrl + "/MetamaskSignDemoWebGLBuild.loader.js";
+        var config = {
+            dataUrl: buildUrl + "/MetamaskSignDemoWebGLBuild.data",
+            frameworkUrl: buildUrl + "/MetamaskSignDemoWebGLBuild.framework.js",
+            codeUrl: buildUrl + "/MetamaskSignDemoWebGLBuild.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+            companyName: "krakaGames",
+            productName: "Runiverse",
+            productVersion: "0.1",
+            showBanner: unityShowBanner,
+        };
+
+        // By default Unity keeps WebGL canvas render target size matched with
+        // the DOM size of the canvas element (scaled by window.devicePixelRatio)
+        // Set this to false if you want to decouple this synchronization from
+        // happening inside the engine, and you would instead like to size up
+        // the canvas DOM size and WebGL render target sizes yourself.
+        // config.matchWebGLToCanvasSize = false;
+
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            container.className = "unity-mobile";
+            // Avoid draining fillrate performance on mobile devices,
+            // and default/override low DPI mode on mobile browsers.
+            config.devicePixelRatio = 1;
+            unityShowBannerPermenent('Unsupported device, this version of Runiverse is optimized for Desktop with Chrome.');
+        } else {
+            canvas.style.width = "1280px";
+            canvas.style.height = "720px";
+
+            var script = document.createElement("script");
+            script.src = loaderUrl;
+            script.onload = () => {
+                createUnityInstance(canvas, config, (progress) => {
+                    progressBarFull.style.width = 100 * progress + "%";
+                }).then((unityInstance) => {
+                    myGameInstance = unityInstance;
+                    loadingBar.style.display = "none";
+                    fullscreenButton.onclick = () => {
+                        unityInstance.SetFullscreen(1);
+                    };
+                }).catch((message) => {
+                    alert(message);
+                });
+            };
+            document.body.appendChild(script);
+        }
+        loadingBar.style.display = "block";
+
+
+    </script>
+</body>
+
+</html>
